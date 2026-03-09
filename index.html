@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KT AI – Trợ Lý Thông Minh</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b0f;
+      --surface: #12141a;
+      --surface2: #1a1d26;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c6aff;
+      --accent2: #00d9c0;
+      --accent3: #ff6b6b;
+      --text: #e8e9f0;
+      --muted: #6b6f84;
+      --user-bubble: linear-gradient(135deg, #7c6aff, #5b4fe0);
+      --ai-bubble: #1a1d26;
+      --glow: rgba(124,106,255,0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(124,106,255,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 90%, rgba(0,217,192,0.08) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+    #app {
+      position: relative; z-index: 1;
+      width: 480px; max-width: 98vw;
+      height: 92vh; max-height: 840px;
+      background: var(--surface);
+      border-radius: 24px; border: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(124,106,255,0.1), 0 40px 80px rgba(0,0,0,0.6), 0 0 60px var(--glow);
+    }
+    /* HEADER */
+    #header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      background: rgba(10,11,15,0.6); backdrop-filter: blur(20px); flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 38px; height: 38px; background: var(--user-bubble);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px;
+      color: #fff; box-shadow: 0 4px 12px rgba(124,106,255,0.4); flex-shrink: 0;
+    }
+    .header-info h1 {
+      font-family: 'Space Mono', monospace; font-size: 15px;
+      font-weight: 700; letter-spacing: 1px; color: #fff;
+    }
+    .status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--accent2); }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent2); box-shadow: 0 0 6px var(--accent2);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .header-right { display: flex; gap: 8px; }
+    .icon-btn {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; font-size: 15px;
+    }
+    .icon-btn:hover { background: rgba(124,106,255,0.15); border-color: rgba(124,106,255,0.3); color: var(--accent); }
+
+    /* SETTINGS */
+    #settings-panel {
+      display: none; padding: 14px 18px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(18,20,26,0.97); backdrop-filter: blur(20px);
+      flex-shrink: 0; overflow-y: auto; max-height: 360px;
+      animation: slideDown 0.2s ease;
+    }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    #settings-panel.open { display: block; }
+    .settings-label {
+      font-size: 10px; font-family: 'Space Mono', monospace;
+      letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
+      margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .get-key-link {
+      font-size: 10px; color: var(--accent2); text-decoration: none;
+      letter-spacing: 0; font-family: 'DM Sans', sans-serif;
+      font-weight: 600; opacity: 0.8; transition: opacity 0.2s; text-transform: none;
+    }
+    .get-key-link:hover { opacity: 1; }
+    .provider-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .provider-tab {
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 12px;
+      cursor: pointer; transition: all 0.2s; text-align: left;
+    }
+    .provider-tab:hover { border-color: rgba(124,106,255,0.3); }
+    .provider-tab.active { background: rgba(124,106,255,0.12); border-color: rgba(124,106,255,0.5); }
+    .tab-icon { font-size: 18px; flex-shrink: 0; }
+    .tab-name { font-size: 12px; font-weight: 600; color: var(--text); font-family: 'Space Mono', monospace; }
+    .tab-sub { font-size: 10px; color: var(--muted); }
+    .free-badge {
+      font-size: 9px; background: rgba(0,217,192,0.15); color: var(--accent2);
+      border: 1px solid rgba(0,217,192,0.3); border-radius: 4px;
+      padding: 1px 5px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .provider-config { animation: slideDown 0.15s ease; }
+    .api-row { display: flex; gap: 8px; align-items: center; }
+    .api-input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 9px 12px; border-radius: 10px;
+      font-size: 12px; font-family: 'Space Mono', monospace;
+      outline: none; transition: border-color 0.2s; width: 100%;
+    }
+    .api-input:focus { border-color: rgba(124,106,255,0.5); }
+    select.api-input { cursor: pointer; }
+    .save-btn {
+      padding: 9px 14px; background: var(--user-bubble);
+      border: none; border-radius: 10px; color: #fff;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; white-space: nowrap;
+    }
+    .save-btn:hover { opacity: 0.85; }
+    .api-status { font-size: 11px; margin-top: 8px; min-height: 14px; }
+    .api-status.ok { color: var(--accent2); }
+    .api-status.err { color: var(--accent3); }
+    .info-box {
+      margin-top: 10px; padding: 10px 12px;
+      background: rgba(0,217,192,0.06); border: 1px solid rgba(0,217,192,0.18);
+      border-radius: 10px; font-size: 11.5px; color: #a0b0ae; line-height: 1.6;
+    }
+    .info-box strong { color: var(--accent2); }
+
+    /* MESSAGES */
+    #messages {
+      flex: 1; overflow-y: auto; padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .msg-wrap {
+      display: flex; gap: 10px;
+      animation: msgIn 0.25s ease forwards; opacity: 0;
+    }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .msg-wrap.user { flex-direction: row-reverse; }
+    .avatar {
+      width: 30px; height: 30px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0;
+      font-family: 'Space Mono', monospace; font-weight: 700;
+    }
+    .avatar.ai { background: var(--user-bubble); color: #fff; box-shadow: 0 2px 8px rgba(124,106,255,0.3); }
+    .avatar.user { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+    .bubble {
+      max-width: 78%; padding: 11px 14px; border-radius: 16px;
+      font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    }
+    .msg-wrap.ai .bubble {
+      background: var(--ai-bubble); border: 1px solid var(--border);
+      border-bottom-left-radius: 4px; color: var(--text);
+    }
+    .msg-wrap.user .bubble {
+      background: var(--user-bubble); color: #fff;
+      border-bottom-right-radius: 4px; box-shadow: 0 4px 16px rgba(124,106,255,0.25);
+    }
+    .file-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.15); border-radius: 8px;
+      padding: 4px 8px; font-size: 12px; margin-bottom: 6px;
+    }
+    .loading-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+    .loading-dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); animation: dot 1.2s infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot { 0%,80%,100%{transform:scale(0.6);opacity:0.3} 40%{transform:scale(1);opacity:1} }
+
+    /* FILE PREVIEW */
+    #file-preview {
+      display: none; margin: 0 16px; padding: 10px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; flex-shrink: 0;
+    }
+    #file-preview.show { display: flex; align-items: center; gap: 10px; }
+    .file-icon { font-size: 22px; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .file-size { font-size: 11px; color: var(--muted); }
+    .remove-file { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 6px; transition: color 0.2s; }
+    .remove-file:hover { color: var(--accent3); }
+
+    /* VOICE */
+    #voice-indicator {
+      display: none; margin: 0 16px; padding: 10px 14px;
+      background: rgba(124,106,255,0.1); border: 1px solid rgba(124,106,255,0.3);
+      border-radius: 12px; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    #voice-indicator.show { display: flex; }
+    .voice-waves { display: flex; align-items: center; gap: 2px; }
+    .voice-waves span { display: block; width: 3px; background: var(--accent); border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
+    .voice-waves span:nth-child(1){height:8px;animation-delay:0s}
+    .voice-waves span:nth-child(2){height:14px;animation-delay:0.1s}
+    .voice-waves span:nth-child(3){height:20px;animation-delay:0.2s}
+    .voice-waves span:nth-child(4){height:14px;animation-delay:0.3s}
+    .voice-waves span:nth-child(5){height:8px;animation-delay:0.4s}
+    @keyframes wave { 0%,100%{transform:scaleY(0.5)} 50%{transform:scaleY(1)} }
+    #voice-text { font-size: 13px; color: var(--accent); flex: 1; }
+    .stop-voice {
+      background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.3);
+      color: var(--accent3); border-radius: 8px; padding: 4px 10px;
+      font-size: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .stop-voice:hover { background: rgba(255,107,107,0.25); }
+
+    /* INPUT */
+    #input-area { padding: 12px 16px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    #input-row {
+      display: flex; align-items: flex-end; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 8px 8px 8px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #input-row:focus-within { border-color: rgba(124,106,255,0.4); box-shadow: 0 0 0 3px rgba(124,106,255,0.08); }
+    #user-input {
+      flex: 1; background: transparent; border: none; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      resize: none; max-height: 100px; min-height: 22px; line-height: 1.5;
+    }
+    #user-input::placeholder { color: var(--muted); }
+    .action-btns { display: flex; gap: 4px; align-items: flex-end; flex-shrink: 0; }
+    .round-btn {
+      width: 32px; height: 32px; border-radius: 10px; border: none;
+      background: transparent; color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: all 0.2s; flex-shrink: 0;
+    }
+    .round-btn:hover { background: rgba(124,106,255,0.15); color: var(--accent); }
+    .round-btn.active { background: rgba(124,106,255,0.2); color: var(--accent); }
+    #send-btn {
+      width: 32px; height: 32px; border-radius: 10px; border: none;
+      background: var(--user-bubble); color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0; transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(124,106,255,0.3);
+    }
+    #send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 14px rgba(124,106,255,0.45); }
+    #send-btn:active { transform: scale(0.97); }
+    #send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .footer-hint { text-align: center; font-size: 10px; color: var(--muted); margin-top: 8px; font-family: 'Space Mono', monospace; letter-spacing: 0.5px; }
+
+    /* WELCOME */
+    #welcome {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; padding: 30px 20px; text-align: center;
+    }
+    .welcome-logo {
+      width: 60px; height: 60px; background: var(--user-bubble);
+      border-radius: 20px; display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-weight: 700; font-size: 20px; color: #fff;
+      box-shadow: 0 8px 24px rgba(124,106,255,0.4); margin-bottom: 4px;
+    }
+    #welcome h2 { font-family: 'Space Mono', monospace; font-size: 18px; letter-spacing: 2px; }
+    #welcome p { font-size: 13px; color: var(--muted); max-width: 280px; line-height: 1.6; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+    .chip {
+      padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.2s;
+    }
+    .chip:hover { border-color: rgba(124,106,255,0.4); color: var(--accent); background: rgba(124,106,255,0.08); }
+    @media (max-width: 520px) { #app { border-radius: 0; height: 100vh; max-height: unset; width: 100vw; } }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="header">
+    <div class="header-left">
+      <div class="logo">KT</div>
+      <div class="header-info">
+        <h1>KT AI</h1>
+        <div class="status"><span class="status-dot"></span><span id="provider-label">Groq · Miễn phí</span></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="settings-btn" title="Cài đặt">⚙️</button>
+      <button class="icon-btn" id="clear-btn" title="Xóa hội thoại">🗑️</button>
+    </div>
+  </div>
+
+  <div id="settings-panel">
+    <div class="settings-label">🤖 Chọn nhà cung cấp AI</div>
+    <div class="provider-tabs">
+      <button class="provider-tab active" data-p="groq">
+        <span class="tab-icon">⚡</span>
+        <div>
+          <div class="tab-name">Groq <span class="free-badge">FREE</span></div>
+          <div class="tab-sub">Llama · Mixtral · Nhanh</div>
+        </div>
+      </button>
+      <button class="provider-tab" data-p="gemini">
+        <span class="tab-icon">✦</span>
+        <div>
+          <div class="tab-name">Gemini</div>
+          <div class="tab-sub">Google · Có phí</div>
+        </div>
+      </button>
+    </div>
+
+    <div id="groq-config" class="provider-config">
+      <div class="settings-label">
+        🔑 Groq API Key
+        <a class="get-key-link" href="https://console.groq.com/keys" target="_blank">🆓 Lấy miễn phí →</a>
+      </div>
+      <div class="api-row">
+        <input type="password" class="api-input" id="groq-key-input" placeholder="gsk_..." />
+        <button class="save-btn" id="save-groq-btn">Lưu</button>
+      </div>
+      <div class="settings-label" style="margin-top:10px">Model</div>
+      <select class="api-input" id="groq-model">
+        <option value="llama-3.3-70b-versatile">⭐ Llama 3.3 70B – Mạnh nhất</option>
+        <option value="llama-3.1-8b-instant">⚡ Llama 3.1 8B – Nhanh nhất</option>
+        <option value="mixtral-8x7b-32768">🔀 Mixtral 8x7B – Cân bằng</option>
+        <option value="gemma2-9b-it">🔷 Gemma 2 9B – Google</option>
+      </select>
+      <div class="info-box">
+        <strong>Groq hoàn toàn miễn phí!</strong> Đăng ký tại <strong>console.groq.com</strong> → tạo API Key → dán vào đây. Giới hạn: 14,400 requests/ngày.
+      </div>
+    </div>
+
+    <div id="gemini-config" class="provider-config" style="display:none">
+      <div class="settings-label">
+        🔑 Gemini API Key
+        <a class="get-key-link" href="https://aistudio.google.com/app/apikey" target="_blank">Lấy key →</a>
+      </div>
+      <div class="api-row">
+        <input type="password" class="api-input" id="gemini-key-input" placeholder="AIza..." />
+        <button class="save-btn" id="save-gemini-btn">Lưu</button>
+      </div>
+      <div class="settings-label" style="margin-top:10px">Model</div>
+      <select class="api-input" id="gemini-model">
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+        <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+      </select>
+    </div>
+
+    <div class="api-status" id="api-status"></div>
+  </div>
+
+  <div id="messages">
+    <div id="welcome">
+      <div class="welcome-logo">KT</div>
+      <h2>XIN CHÀO!</h2>
+      <p>Tôi là <strong>KT AI</strong> – trợ lý thông minh của bạn. Hãy hỏi tôi bất cứ điều gì!</p>
+      <div class="chips">
+        <div class="chip" onclick="quickSend('Bạn có thể làm gì?')">🤔 Bạn có thể làm gì?</div>
+        <div class="chip" onclick="quickSend('Giải thích trí tuệ nhân tạo')">🧠 Giải thích AI</div>
+        <div class="chip" onclick="quickSend('Viết một đoạn thơ ngắn về mùa xuân')">✍️ Viết thơ</div>
+        <div class="chip" onclick="quickSend('Dịch sang tiếng Anh: Xin chào thế giới')">🌐 Dịch văn bản</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="file-preview">
+    <div class="file-icon" id="file-icon">📄</div>
+    <div class="file-info">
+      <div class="file-name" id="file-name">—</div>
+      <div class="file-size" id="file-size">—</div>
+    </div>
+    <button class="remove-file" id="remove-file">✕</button>
+  </div>
+
+  <div id="voice-indicator">
+    <div class="voice-waves"><span></span><span></span><span></span><span></span><span></span></div>
+    <div id="voice-text">Đang lắng nghe...</div>
+    <button class="stop-voice" id="stop-voice">Dừng</button>
+  </div>
+
+  <div id="input-area">
+    <div id="input-row">
+      <textarea id="user-input" rows="1" placeholder="Nhắn tin với KT AI..."></textarea>
+      <div class="action-btns">
+        <input type="file" id="file-input" style="display:none" accept="image/*,.pdf,.txt,.doc,.docx" />
+        <button class="round-btn" id="file-btn" title="Đính kèm file">📎</button>
+        <button class="round-btn" id="voice-btn" title="Giọng nói">🎙️</button>
+        <button id="send-btn" title="Gửi (Enter)">➤</button>
+      </div>
+    </div>
+    <div class="footer-hint" id="footer-hint">KT AI · Powered by Groq (Miễn phí)</div>
+  </div>
+
+</div>
+
+<script type="importmap">
+{ "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
+</script>
+
+<script type="module">
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// STATE
+let currentProvider = localStorage.getItem('kt_provider') || 'groq';
+let groqKey     = localStorage.getItem('kt_groq_key')    || '';
+let geminiKey   = localStorage.getItem('kt_gemini_key')  || '';
+let groqModel   = localStorage.getItem('kt_groq_model')  || 'llama-3.3-70b-versatile';
+let geminiModel = localStorage.getItem('kt_gemini_model')|| 'gemini-2.0-flash';
+let attachedFile = null, attachedFileData = null;
+let recognition = null, isListening = false;
+
+// ELEMENTS
+const messagesEl     = document.getElementById('messages');
+const userInput      = document.getElementById('user-input');
+const sendBtn        = document.getElementById('send-btn');
+const fileBtn        = document.getElementById('file-btn');
+const fileInput      = document.getElementById('file-input');
+const voiceBtn       = document.getElementById('voice-btn');
+const settingsBtn    = document.getElementById('settings-btn');
+const settingsPanel  = document.getElementById('settings-panel');
+const apiStatus      = document.getElementById('api-status');
+const filePreview    = document.getElementById('file-preview');
+const fileNameEl     = document.getElementById('file-name');
+const fileSizeEl     = document.getElementById('file-size');
+const fileIconEl     = document.getElementById('file-icon');
+const removeFileBtn  = document.getElementById('remove-file');
+const voiceIndicator = document.getElementById('voice-indicator');
+const voiceTextEl    = document.getElementById('voice-text');
+const stopVoiceBtn   = document.getElementById('stop-voice');
+const clearBtn       = document.getElementById('clear-btn');
+const providerLabel  = document.getElementById('provider-label');
+const footerHint     = document.getElementById('footer-hint');
+const groqKeyInput   = document.getElementById('groq-key-input');
+const geminiKeyInput = document.getElementById('gemini-key-input');
+const groqModelSel   = document.getElementById('groq-model');
+const geminiModelSel = document.getElementById('gemini-model');
+const groqConfig     = document.getElementById('groq-config');
+const geminiConfig   = document.getElementById('gemini-config');
+
+// INIT
+groqKeyInput.value    = groqKey;
+geminiKeyInput.value  = geminiKey;
+groqModelSel.value    = groqModel;
+geminiModelSel.value  = geminiModel;
+switchProvider(currentProvider, false);
+
+// PROVIDER SWITCH
+document.querySelectorAll('.provider-tab').forEach(t =>
+  t.addEventListener('click', () => switchProvider(t.dataset.p, true))
+);
+
+function switchProvider(p, save) {
+  currentProvider = p;
+  if (save) localStorage.setItem('kt_provider', p);
+  document.querySelectorAll('.provider-tab').forEach(t => t.classList.toggle('active', t.dataset.p === p));
+  groqConfig.style.display   = p === 'groq'   ? 'block' : 'none';
+  geminiConfig.style.display = p === 'gemini' ? 'block' : 'none';
+  if (p === 'groq') {
+    providerLabel.textContent = 'Groq · Miễn phí';
+    footerHint.textContent = 'KT AI · Powered by Groq (Miễn phí)';
+  } else {
+    providerLabel.textContent = 'Gemini · Google';
+    footerHint.textContent = 'KT AI · Powered by Gemini';
+  }
+  apiStatus.textContent = ''; apiStatus.className = 'api-status';
+}
+
+// SAVE KEYS
+document.getElementById('save-groq-btn').addEventListener('click', () => {
+  const v = groqKeyInput.value.trim();
+  if (!v) return showStatus('⚠ Vui lòng nhập Groq API key', 'err');
+  groqKey = v; localStorage.setItem('kt_groq_key', v);
+  groqModel = groqModelSel.value; localStorage.setItem('kt_groq_model', groqModel);
+  showStatus('✓ Đã lưu! Sẵn sàng dùng miễn phí.', 'ok');
+  setTimeout(() => settingsPanel.classList.remove('open'), 1200);
+});
+
+document.getElementById('save-gemini-btn').addEventListener('click', () => {
+  const v = geminiKeyInput.value.trim();
+  if (!v) return showStatus('⚠ Vui lòng nhập Gemini API key', 'err');
+  geminiKey = v; localStorage.setItem('kt_gemini_key', v);
+  geminiModel = geminiModelSel.value; localStorage.setItem('kt_gemini_model', geminiModel);
+  showStatus('✓ Đã lưu Gemini key!', 'ok');
+  setTimeout(() => settingsPanel.classList.remove('open'), 1200);
+});
+
+groqModelSel.addEventListener('change', () => { groqModel = groqModelSel.value; localStorage.setItem('kt_groq_model', groqModel); });
+geminiModelSel.addEventListener('change', () => { geminiModel = geminiModelSel.value; localStorage.setItem('kt_gemini_model', geminiModel); });
+function showStatus(msg, cls) { apiStatus.textContent = msg; apiStatus.className = 'api-status ' + cls; }
+
+// SETTINGS TOGGLE
+settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('open'));
+
+// CLEAR
+clearBtn.addEventListener('click', () => {
+  if (!confirm('Xóa toàn bộ cuộc trò chuyện?')) return;
+  messagesEl.innerHTML = `<div id="welcome">
+    <div class="welcome-logo">KT</div><h2>XIN CHÀO!</h2>
+    <p>Tôi là <strong>KT AI</strong> – trợ lý thông minh của bạn.</p>
+    <div class="chips">
+      <div class="chip" onclick="quickSend('Bạn có thể làm gì?')">🤔 Bạn có thể làm gì?</div>
+      <div class="chip" onclick="quickSend('Giải thích trí tuệ nhân tạo')">🧠 Giải thích AI</div>
+      <div class="chip" onclick="quickSend('Viết một đoạn thơ ngắn về mùa xuân')">✍️ Viết thơ</div>
+      <div class="chip" onclick="quickSend('Dịch sang tiếng Anh: Xin chào thế giới')">🌐 Dịch văn bản</div>
+    </div></div>`;
+  clearAttachment();
+});
+
+// FILE
+fileBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0]; if (!file) return;
+  attachedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => { attachedFileData = e.target.result; };
+  if (file.type.startsWith('image/')) { reader.readAsDataURL(file); fileIconEl.textContent = '🖼️'; }
+  else { reader.readAsText(file); fileIconEl.textContent = file.name.endsWith('.pdf') ? '📕' : '📄'; }
+  fileNameEl.textContent = file.name;
+  fileSizeEl.textContent = formatSize(file.size);
+  filePreview.classList.add('show'); fileInput.value = '';
+});
+removeFileBtn.addEventListener('click', clearAttachment);
+function clearAttachment() { attachedFile = null; attachedFileData = null; filePreview.classList.remove('show'); }
+function formatSize(b) { if(b<1024)return b+' B'; if(b<1048576)return(b/1024).toFixed(1)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
+
+// VOICE
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+voiceBtn.addEventListener('click', () => {
+  if (!SR) return addMsg('ai', '⚠️ Trình duyệt không hỗ trợ giọng nói. Hãy dùng Chrome.');
+  isListening ? stopListening() : startListening();
+});
+stopVoiceBtn.addEventListener('click', stopListening);
+
+function startListening() {
+  recognition = new SR(); recognition.lang = 'vi-VN'; recognition.interimResults = true;
+  isListening = true; voiceBtn.classList.add('active'); voiceIndicator.classList.add('show');
+  recognition.onresult = e => {
+    const t = Array.from(e.results).map(r => r[0].transcript).join('');
+    voiceTextEl.textContent = '🎤 ' + t; userInput.value = t; autoResize(userInput);
+  };
+  recognition.onend = () => { const txt = userInput.value.trim(); stopListening(); if (txt) handleSend(); };
+  recognition.onerror = e => { voiceTextEl.textContent = '⚠️ ' + e.error; setTimeout(stopListening, 1500); };
+  recognition.start();
+}
+function stopListening() {
+  isListening = false; voiceBtn.classList.remove('active'); voiceIndicator.classList.remove('show');
+  voiceTextEl.textContent = 'Đang lắng nghe...'; try { recognition?.stop(); } catch(_) {}
+}
+
+// TEXTAREA
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+userInput.addEventListener('input', () => autoResize(userInput));
+userInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend();} });
+sendBtn.addEventListener('click', handleSend);
+
+// MESSAGES
+function addMsg(role, text, fileInfo) {
+  document.getElementById('welcome')?.remove();
+  const wrap = document.createElement('div'); wrap.className = `msg-wrap ${role}`;
+  const av = document.createElement('div'); av.className = `avatar ${role}`; av.textContent = role==='ai'?'KT':'👤';
+  const bubble = document.createElement('div'); bubble.className = 'bubble';
+  if (fileInfo) { const tag = document.createElement('div'); tag.className='file-tag'; tag.textContent=fileInfo; bubble.appendChild(tag); }
+  const span = document.createElement('span'); span.textContent = text; bubble.appendChild(span);
+  wrap.appendChild(av); wrap.appendChild(bubble); messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function addLoading() {
+  document.getElementById('welcome')?.remove();
+  const wrap = document.createElement('div'); wrap.className='msg-wrap ai'; wrap.id='loading-msg';
+  wrap.innerHTML = `<div class="avatar ai">KT</div><div class="bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+  messagesEl.appendChild(wrap); messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function removeLoading() { document.getElementById('loading-msg')?.remove(); }
+
+// SEND
+// Thay thế đoạn code gọi Groq/Gemini cũ trong handleSend() bằng đoạn này:
+async function handleSend() {
+  const text = userInput.value.trim();
+  if (!text && !attachedFile) return;
+
+  const fileInfo = attachedFile ? `📎 ${attachedFile.name}` : null;
+  addMsg('user', text || 'Phân tích file', fileInfo);
+  
+  const payload = {
+    provider: currentProvider,
+    text: text,
+    model: currentProvider === 'groq' ? groqModel : geminiModel,
+    fileData: attachedFileData, // base64 hoặc text
+    fileType: attachedFile?.type,
+    fileName: attachedFile?.name
+  };
+
+  userInput.value = ''; clearAttachment(); addLoading(); sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    
+    removeLoading();
+    addMsg('ai', data.reply);
+  } catch (err) {
+    removeLoading();
+    addMsg('ai', '⚠️ Lỗi server: ' + err.message);
+  }
+  sendBtn.disabled = false;
+}
+
+// GROQ (OpenAI-compatible, FREE)
+async function callGroq(key, text, file, fileData) {
+  let userContent = text;
+  if (file && fileData) {
+    if (file.type.startsWith('image/')) {
+      userContent = [
+        { type:'text', text: text || 'Mô tả hình ảnh này.' },
+        { type:'image_url', image_url:{ url: fileData } }
+      ];
+    } else {
+      userContent = `${text}\n\n[Nội dung file "${file.name}"]:\n${fileData}`;
+    }
+  }
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+    body: JSON.stringify({
+      model: groqModelSel.value,
+      messages: [
+        { role:'system', content:'Bạn là KT AI, trợ lý thông minh thân thiện. Trả lời bằng tiếng Việt trừ khi được yêu cầu khác.' },
+        { role:'user', content: userContent }
+      ],
+      temperature: 0.7, max_tokens: 2048
+    })
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '(Không có phản hồi)';
+}
+
+// GEMINI
+async function callGemini(key, text, file, fileData, fileType) {
+  const genAI = new GoogleGenerativeAI(key);
+  const model = genAI.getGenerativeModel({ model: geminiModelSel.value });
+  let contents;
+  if (file && fileType?.startsWith('image/') && fileData) {
+    contents = [{ inlineData:{ mimeType:fileType, data:fileData.split(',')[1] } }, { text }];
+  } else if (file && fileData) {
+    contents = `${text}\n\n[Nội dung file "${file.name}"]:\n${fileData}`;
+  } else { contents = text; }
+  const result = await model.generateContent(contents);
+  return result.response.text();
+}
+
+window.quickSend = function(text) { userInput.value = text; handleSend(); };
+</script>
+</body>
+</html>
